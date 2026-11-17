@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kpm-autoname"
+version = "0.1.0"
+description = "DeepLabCut output -> Keypoint-MoSeq syllables -> merged, named syllables with justification and one video per syllable"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Yingjun" }]
+requires-python = ">=3.9,<3.12"
+dependencies = [
+    "keypoint-moseq>=0.6,<0.7",
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "h5py",
+    "tables",
+    "pyyaml",
+    "matplotlib",
+    "opencv-python-headless",
+]
+
+[project.optional-dependencies]
+video = ["torch", "timm>=0.9"]
+test = ["pytest"]
+
+[project.scripts]
+kpm-autoname = "kpm_autoname.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kpm_autoname = ["*.yml"]

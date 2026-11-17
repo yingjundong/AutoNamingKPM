@@ -1,0 +1,80 @@
+# kpm-autoname run configuration. Fill in the four REQUIRED settings and check the body-part names;
+# everything else can stay at its default. Check it with:  kpm-autoname check <this file>
+# Paths: on Windows use either forward slashes (E:/data/dlc) or single-quoted backslashes ('E:\data\dlc').
+
+# ---------------------------------------------------------------- REQUIRED
+dlc_dir: /path/to/dlc_output        # DeepLabCut output files (searched in all sub-folders)
+video_dir: /path/to/raw_videos      # the raw behaviour videos (NOT copies with keypoints drawn on them)
+output_dir: /path/to/results/run1   # everything this run writes goes here
+cm_per_px: 0.1                      # arena calibration: centimetres per video pixel
+
+# ---------------------------------------------------------------- body parts (DLC names)
+bodyparts:
+  nose: Nose                # REQUIRED: front end of the animal (KPM heading, rearing)
+  tail_base: Tail_Base      # REQUIRED: back end (KPM heading, body length)
+  head: null                # optional, with mid_body: body bend
+  mid_body: null
+use_bodyparts: null         # body parts given to Keypoint-MoSeq; null = all in the DLC files
+skeleton:                   # pairs of connected body parts: cleaning (implausible lengths) and drawing. null = none
+  - [Nose, Tail_Base]
+
+# ---------------------------------------------------------------- input files
+dlc_glob: "*DLC*.csv"       # which files in dlc_dir are DLC outputs ("*DLC*.h5" also works)
+exclude: [_filtered, _labeled, _meta, _full, concatenat]   # skip files / folders whose name contains any of these
+video_extensions: [.avi, .mp4, .mov, .mkv]
+camera_fps: null            # true camera frame rate for speeds; null = read from each video file
+session_level: 1            # which folder names the session: 1 = the folder holding the DLC file, 2 = its parent, ...
+subject_regex: null         # regex on the session folder name whose first group is the animal, e.g. "^([^_]+)";
+                            # null = every session is its own animal
+
+# ---------------------------------------------------------------- 1 cleaning
+cleaning:
+  enabled: true             # false = the DLC files are already cleaned (used as they are)
+  likelihood: 0.6           # remove points below this DLC likelihood
+  velocity_mad: 8.0         # remove jumps > median + this x robust SD (per file and body part)
+  shape_mad: 4.0            # remove skeleton edges > median + this x robust SD ...
+  shape_max_factor: 2.0     # ... or > this x their median length
+  remove_zero_xy: true
+  interpolation_limit: 15   # fill gaps up to this many frames
+  moving_average: 15        # centred moving average window (frames); 1 = none
+
+# ---------------------------------------------------------------- 2 Keypoint-MoSeq
+kpm:
+  seed: 42
+  kappa: 1.0e+6             # syllable stickiness (higher = longer syllables)
+  latent_dim: 4
+  outlier_scale_factor: 6.0
+  fps: 20
+  ar_iters: 50              # AR-only iterations
+  full_iters: 0             # full-model iterations after that (0 = use the AR-HMM, as in the reference model)
+  jitter: 1.0e-2
+  min_frames: 5             # skip recordings shorter than this
+  device: cpu               # cpu or gpu (gpu needs a CUDA build of jax)
+  trajectory_plots: true
+  export_csv: true          # per-recording result CSVs
+  config_overrides: {}      # any other Keypoint-MoSeq config.yml setting, e.g. {conf_threshold: 0.5}
+
+# ---------------------------------------------------------------- 3 merging
+merge:
+  max_auc: 0.75             # merge syllables a classifier separates with AUC below this (0.5 = identical, 1 = always)
+  rare_pct: 0.5             # syllables below this % of frames are "rare": joined to a group only if they clearly resemble it
+  rare_min_prob: 0.5
+  bouts_per_syllable: 300
+  frames_per_bout: 8
+  crop_px: null             # side of the egocentric crop in pixels; null = crop_cm / cm_per_px
+  crop_cm: 16.5             # about 1.5-2 body lengths
+  features: video+kinematic # or: video, kinematic (kinematic needs no torch / GPU, but merges less well)
+  embed_python: null        # Python of another environment with torch + timm (e.g. a CUDA one); null = this one
+  device: auto              # auto, cuda or cpu
+  compare_to: null          # optional hand-made merge_mapping.csv of the same model, to score the automatic merge
+
+# ---------------------------------------------------------------- 3 naming
+naming:
+  likelihood: 0.6           # nose counts as "lost" below this likelihood
+  location_labels: null     # optional frame-level locations ("pause at wall"); see README, "Location labels"
+
+# ---------------------------------------------------------------- 4 videos
+videos:
+  bouts_per_recording: 3    # longest bouts of each syllable taken from every recording
+  caption_scale: 0.3        # caption font size; 0 = no caption
+  output_fps: null          # null = the source videos' frame rate

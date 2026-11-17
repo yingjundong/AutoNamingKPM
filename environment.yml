@@ -1,0 +1,18 @@
+# conda env create -f environment.yml      (run from the repository folder)
+# conda activate kpm-autoname
+#
+# PyTorch from pip is a CPU build on Windows / macOS. For a GPU (much faster embedding on large datasets), install
+# a CUDA build afterwards following https://pytorch.org/get-started/locally/ , or point merge.embed_python in your
+# config at the Python of an environment that already has CUDA torch + timm (e.g. a DeepLabCut environment).
+name: kpm-autoname
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - keypoint-moseq==0.6.6
+      - torch
+      - timm>=0.9
+      - pytest
+      - -e .
